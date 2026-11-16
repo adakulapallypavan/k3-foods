@@ -26,6 +26,12 @@ export interface CartItem {
 
 export type OrderStatus = 'received' | 'preparing' | 'ready' | 'delivered';
 
+export interface BillRequest {
+  id: string;
+  tableNumber: number;
+  requestedAt: string;
+}
+
 export interface Order {
   id: string;
   tableNumber: number;

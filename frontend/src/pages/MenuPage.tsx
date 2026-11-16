@@ -17,6 +17,8 @@ export default function MenuPage() {
   const [note, setNote] = useState('');
   const [ordered, setOrdered] = useState(false);
   const [placing, setPlacing] = useState(false);
+  const [billCalled, setBillCalled] = useState(false);
+  const [callingBill, setCallingBill] = useState(false);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const tabsRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +64,21 @@ export default function MenuPage() {
     return () => observer.disconnect();
   }, []);
 
+  async function callForBill() {
+    setCallingBill(true);
+    try {
+      await fetch('/api/bill-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableNumber }),
+      });
+      setBillCalled(true);
+    } catch {
+      alert('Could not send request. Please try again.');
+    }
+    setCallingBill(false);
+  }
+
   async function placeOrder() {
     setPlacing(true);
     try {
@@ -85,9 +102,18 @@ export default function MenuPage() {
         <div style={{ fontSize: 64, marginBottom: 16 }}>🎉</div>
         <h1 style={{ color: BROWN, fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Order Placed!</h1>
         <p style={{ color: '#666', textAlign: 'center', marginBottom: 24 }}>Your food will be prepared and delivered to Table {tableNumber} shortly.</p>
-        <button onClick={() => setOrdered(false)} style={{ background: ORANGE, color: '#fff', border: 'none', borderRadius: 24, padding: '12px 32px', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>
+        <button onClick={() => setOrdered(false)} style={{ background: ORANGE, color: '#fff', border: 'none', borderRadius: 24, padding: '12px 32px', fontSize: 16, fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}>
           Order More
         </button>
+        {billCalled ? (
+          <div style={{ background: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: 24, padding: '12px 32px', color: '#2e7d32', fontWeight: 600, fontSize: 15 }}>
+            Bill Requested ✓
+          </div>
+        ) : (
+          <button onClick={callForBill} disabled={callingBill} style={{ background: '#fff', color: BROWN, border: `2px solid ${BROWN}`, borderRadius: 24, padding: '12px 32px', fontSize: 16, fontWeight: 600, cursor: 'pointer', opacity: callingBill ? 0.6 : 1 }}>
+            {callingBill ? 'Requesting...' : 'Call for Bill'}
+          </button>
+        )}
       </div>
     );
   }
@@ -100,8 +126,17 @@ export default function MenuPage() {
           <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: 0.5 }}>K3 Foods</div>
           <div style={{ fontSize: 11, color: ORANGE, fontWeight: 600 }}>Bombay Express</div>
         </div>
-        <div style={{ background: ORANGE, color: '#fff', borderRadius: 20, padding: '4px 14px', fontSize: 13, fontWeight: 700 }}>
-          Table {tableNumber}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {billCalled ? (
+            <div style={{ background: '#e8f5e9', color: '#2e7d32', borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 700 }}>Bill ✓</div>
+          ) : (
+            <button onClick={callForBill} disabled={callingBill} style={{ background: 'transparent', color: '#fff', border: '1.5px solid rgba(255,255,255,0.6)', borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              Call Bill
+            </button>
+          )}
+          <div style={{ background: ORANGE, color: '#fff', borderRadius: 20, padding: '4px 14px', fontSize: 13, fontWeight: 700 }}>
+            Table {tableNumber}
+          </div>
         </div>
       </div>
 

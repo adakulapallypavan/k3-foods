@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Order, OrderStatus } from '../types';
+import { Order, OrderStatus, BillRequest } from '../types';
 
 const BROWN = '#3d1a00';
 const ORANGE = '#e07820';
@@ -23,6 +23,7 @@ function elapsed(createdAt: string) {
 export default function KitchenPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [flashIds, setFlashIds] = useState<Set<string>>(new Set());
+  const [billRequests, setBillRequests] = useState<BillRequest[]>([]);
   const socketRef = useRef<Socket | null>(null);
   const [tick, setTick] = useState(0);
 
@@ -36,6 +37,9 @@ export default function KitchenPage() {
     socketRef.current = socket;
 
     socket.on('orders_init', (data: Order[]) => setOrders(data));
+    socket.on('bill_requests_init', (data: BillRequest[]) => setBillRequests(data));
+    socket.on('bill_request', (req: BillRequest) => setBillRequests(prev => [...prev, req]));
+    socket.on('bill_request_dismissed', (id: string) => setBillRequests(prev => prev.filter(r => r.id !== id)));
 
     socket.on('new_order', (order: Order) => {
       setOrders(prev => [...prev, order]);
@@ -54,6 +58,10 @@ export default function KitchenPage() {
 
     return () => { socket.disconnect(); };
   }, []);
+
+  async function dismissBill(id: string) {
+    await fetch(`/api/bill-request/${id}`, { method: 'DELETE' });
+  }
 
   async function updateStatus(orderId: string, status: OrderStatus) {
     if (status === 'delivered') {
@@ -83,6 +91,25 @@ export default function KitchenPage() {
           </div>
         )}
       </div>
+
+      {billRequests.length > 0 && (
+        <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {billRequests.map(req => (
+            <div key={req.id} style={{ background: '#fff3cd', border: '2px solid #ffc107', borderRadius: 12, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 22 }}>🧾</span>
+                <div>
+                  <div style={{ fontWeight: 800, color: '#7d4e00', fontSize: 15 }}>Table {req.tableNumber} — Bill Requested</div>
+                  <div style={{ fontSize: 12, color: '#a07000' }}>{elapsed(req.requestedAt)}</div>
+                </div>
+              </div>
+              <button onClick={() => dismissBill(req.id)} style={{ background: '#ffc107', color: '#fff', border: 'none', borderRadius: 20, padding: '6px 16px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                Done
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ padding: 16 }}>
         {sorted.length === 0 ? (

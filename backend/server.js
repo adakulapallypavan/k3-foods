@@ -149,6 +149,7 @@ const menu = [
 ];
 
 let orders = [];
+let billRequests = [];
 
 app.get('/api/menu', (req, res) => {
   res.json(menu);
@@ -186,6 +187,21 @@ app.patch('/api/orders/:id', (req, res) => {
   res.json(order);
 });
 
+app.post('/api/bill-request', (req, res) => {
+  const { tableNumber } = req.body;
+  if (!tableNumber) return res.status(400).json({ error: 'tableNumber required' });
+  const request = { id: uuidv4(), tableNumber, requestedAt: new Date().toISOString() };
+  billRequests.push(request);
+  io.emit('bill_request', request);
+  res.status(201).json(request);
+});
+
+app.delete('/api/bill-request/:id', (req, res) => {
+  billRequests = billRequests.filter(r => r.id !== req.params.id);
+  io.emit('bill_request_dismissed', req.params.id);
+  res.json({ success: true });
+});
+
 app.delete('/api/orders/:id', (req, res) => {
   const order = orders.find(o => o.id === req.params.id);
   if (!order) return res.status(404).json({ error: 'Order not found' });
@@ -197,6 +213,7 @@ app.delete('/api/orders/:id', (req, res) => {
 
 io.on('connection', (socket) => {
   socket.emit('orders_init', orders.filter(o => o.status !== 'delivered'));
+  socket.emit('bill_requests_init', billRequests);
 });
 
 const DIST = path.join(__dirname, '../frontend/dist');
