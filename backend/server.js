@@ -150,6 +150,22 @@ const menu = [
 
 let orders = [];
 let billRequests = [];
+let pushTokens = [];
+
+async function sendPush(title, body) {
+  if (pushTokens.length === 0) return;
+  fetch('https://exp.host/--/api/v2/push/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(pushTokens.map(token => ({ to: token, sound: 'default', title, body }))),
+  }).catch(() => {});
+}
+
+app.post('/api/register-device', (req, res) => {
+  const { token } = req.body;
+  if (token && !pushTokens.includes(token)) pushTokens.push(token);
+  res.json({ success: true });
+});
 
 app.get('/api/menu', (req, res) => {
   res.json(menu);
@@ -175,6 +191,7 @@ app.post('/api/orders', (req, res) => {
   };
   orders.push(order);
   io.emit('new_order', order);
+  sendPush(`New Order — Table ${order.tableNumber}`, order.items.map(i => `${i.qty}× ${i.name}`).join(', '));
   res.status(201).json(order);
 });
 
@@ -193,6 +210,7 @@ app.post('/api/bill-request', (req, res) => {
   const request = { id: uuidv4(), tableNumber, requestedAt: new Date().toISOString() };
   billRequests.push(request);
   io.emit('bill_request', request);
+  sendPush(`Bill Requested — Table ${request.tableNumber}`, 'Customer is ready to pay');
   res.status(201).json(request);
 });
 

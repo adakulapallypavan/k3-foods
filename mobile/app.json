@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "K3 Foods Kitchen",
+    "slug": "k3-foods-kitchen",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["android"],
+    "android": {
+      "package": "com.k3foods.kitchen",
+      "adaptiveIcon": {
+        "backgroundColor": "#3d1a00"
+      }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#e07820",
+          "sounds": []
+        }
+      ]
+    ]
+  }
+}
